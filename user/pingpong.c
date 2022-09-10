@@ -10,26 +10,26 @@ int main(int argc,char* argv[]){
     /*生成子程序*/
     int flag = fork();
     if(flag == 0){   //子程序执行逻辑
-        char buffer[5], mes = "pong";
+        char buffer[5];
         /*先进行读*/
         close(p2[1]);   //close pipe2's write
         close(p1[0]);   //close pipe1's read
 
         //First,read message from pipe2
-        int read_len = read(p2[0],buffer,5);
+        read(p2[0],buffer,5);
         int pid = getpid();
         printf("%d: received %s\n",pid,buffer);
 
         //Next,write message into pipe1
-        int write_len = write(p1[1],"pong",5);
+        write(p1[1],"pong",5);
     }else{                    //father 
-        char buffer[5],mes="ping";
+        char buffer[5];
         close(p2[0]);   //write into p2[1]
         close(p1[1]);   //read from p1[0]
         /*First,write message into pip2*/
-        int write_len = write(p2[1],"ping",5);
+        write(p2[1],"ping",5);
         /*Next,read from pipe1*/
-        int read_len = read(p1[0],buffer,5);
+        read(p1[0],buffer,5);
         int pid = getpid();
         printf("%d: received %s\n",pid,buffer);
     }
