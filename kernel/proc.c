@@ -695,3 +695,30 @@ procdump(void)
     printf("\n");
   }
 }
+
+// return freepd num for sysinfo
+uint64
+get_freepd(void){
+  int free_pd = 0;
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++){
+    if(p->state == UNUSED){
+      free_pd += PGSIZE;
+    }
+  }
+  return free_pd;
+}
+
+//return free file for sysinfo
+uint64
+get_freefd(void){
+  struct proc *p = myproc();
+  int used_file = 0;
+
+  for(int fd = 0; fd < NOFILE; fd++){
+    if(p->ofile[fd]){
+      used_file ++;
+    }
+  }
+return NOFILE-used_file;
+}
