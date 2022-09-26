@@ -14,17 +14,6 @@ int main(int argc,char* argv[]){
         char buf[512]={'\0'}; 
         int num = arg_num;
     
-        // while(read(0,p,1)==1 && p-buf < 512){
-        //     printf("%d",(int)*p);
-        //     if(*p == -1){
-        //         exit(0);
-        //     }
-        //     if(*p == '\n'){
-        //         *(++p)='\0';
-        //         break;
-        //     }
-        //     p++;
-        // }
         if(strlen(gets(buf,512)) != 0){
             char *p,*q;
             p = buf;
