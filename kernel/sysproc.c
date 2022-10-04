@@ -116,6 +116,7 @@ uint64
 sys_sysinfo(void){
   struct sysinfo info;
   struct sysinfo *addr;
+  struct proc *p = myproc();
   if(argaddr(0,(uint64*)&addr)<0){
     return -1;
   }
@@ -123,8 +124,9 @@ sys_sysinfo(void){
   info.freemem = get_freemem();
   info.nproc = get_freepd();
   info.freefd = get_freefd();
-  if(copyout((pagetable_t)&(info), (uint64)addr, (char *)&(info), sizeof(info)) < 0)
-      return -1;
+  if(copyout(p->pagetable, (uint64)addr, (char *)&(info), sizeof(info)) < 0){
+    return -1;
+  }
   
   return 0;
 }

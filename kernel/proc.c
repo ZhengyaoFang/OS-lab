@@ -703,7 +703,7 @@ get_freepd(void){
   struct proc *p;
   for(p = proc; p < &proc[NPROC]; p++){
     if(p->state == UNUSED){
-      free_pd += PGSIZE;
+      free_pd += 1;
     }
   }
   return free_pd;

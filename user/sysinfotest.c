@@ -8,7 +8,7 @@
 void
 sinfo(struct sysinfo *info) {
   if (sysinfo(info) < 0) {
-    printf("FAIL: sysinfo failed");
+    printf("FAIL: sysinfo failed:");
     exit(1);
   }
 }
@@ -79,12 +79,10 @@ testmem() {
 void
 testcall() {
   struct sysinfo info;
-  
-  if (sysinfo(&info) < 0) {
+  if ( sysinfo(&info) < 0) {
     printf("FAIL: sysinfo failed\n");
     exit(1);
   }
-
   if (sysinfo((struct sysinfo *) 0xeaeb0b5b00002f5e) !=  0xffffffffffffffff) {
     printf("FAIL: sysinfo succeeded with bad argument\n");
     exit(1);
