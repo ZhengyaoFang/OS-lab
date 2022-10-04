@@ -147,7 +147,7 @@ syscall(void)
     p->trapframe->a0 = syscalls[num]();
     //TODO: 打印
     if(((1 << num) & p->mask) != 0){
-      printf("%d:sys_%s(%d) -> %d\n",p->pid,sys_name[num],arg0,p->trapframe->a0);
+      printf("%d: sys_%s(%d) -> %d\n",p->pid,sys_name[num],arg0,p->trapframe->a0);
     }
   } else {
     printf("%d %s: unknown sys call %d\n",
