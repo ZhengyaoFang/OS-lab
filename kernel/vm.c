@@ -450,3 +450,36 @@ test_pagetable()
   uint64 gsatp = MAKE_SATP(kernel_pagetable);
   return satp != gsatp;
 }
+
+void
+vmprint(pagetable_t pagetable){
+  printf("page table %p\n",pagetable);
+  vmprint_sublevel(pagetable,2);
+
+}
+
+void
+vmprint_sublevel(pagetable_t pagetable,uint16 level){
+
+  //the bottom level
+  if(level<0)
+    return ;
+  // there are 2^9 = 512 PTEs in a page table.
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if((pte & PTE_V)){
+      // this PTE points to a lower-level page table.
+      uint64 child = PTE2PA(pte);
+      if(level==2){
+        printf("||%d: pte %p pa %p\n",i,pte,child);
+      }else if(level==1){
+        printf("|| ||%d: pte %p pa %p\n",i,pte,child);
+      }else if(level==0){
+        printf("|| || ||%d: pte %p pa %p\n",i,pte,child);
+      }
+      if((pte & (PTE_R|PTE_W|PTE_X)) == 0){
+        vmprint_sublevel((pagetable_t)child,level-1);
+      }
+    } 
+  }
+}
