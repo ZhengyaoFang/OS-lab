@@ -86,6 +86,7 @@ ukvminit(){
     memset(uk_pagetable, 0, PGSIZE);
     // uart registers
     ukvmmap(uk_pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+    
     // virtio mmio disk interface
     ukvmmap(uk_pagetable, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
     // // CLINT
@@ -154,26 +155,6 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   return &pagetable[PX(0, va)];
 }
 
-pte_t *
-walk2(pagetable_t pagetable, uint64 va, int alloc)
-{
-  pagetable_t temp;
-  if(va >= MAXVA)
-    panic("walk");
-
-  for(int level = 2; level > 1; level--) {
-    pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
-      pagetable = (pagetable_t)PTE2PA(*pte);
-    } else {
-      if(!alloc || (temp = (pde_t*)kalloc()) == 0)
-        return 0;
-      memset(temp, 0, PGSIZE);
-      *pte = PA2PTE(temp) | PTE_V;
-    }
-  }
-  return &temp[PX(1, va)];
-}
 
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
@@ -492,24 +473,9 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
-  uint64 n, va0, pa0;
-
-  while(len > 0){
-    va0 = PGROUNDDOWN(srcva);
-    pa0 = walkaddr(pagetable, va0);
-    if(pa0 == 0)
-      return -1;
-    n = PGSIZE - (srcva - va0);
-    if(n > len)
-      n = len;
-    memmove(dst, (void *)(pa0 + (srcva - va0)), n);
-
-    len -= n;
-    dst += n;
-    srcva = va0 + PGSIZE;
-  }
-  return 0;
+    return copyin_new(pagetable, dst, srcva, len);
 }
+
 
 // Copy a null-terminated string from user to kernel.
 // Copy bytes to dst from virtual address srcva in a given page table,

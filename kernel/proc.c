@@ -236,7 +236,12 @@ userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
-  copyUtoK(p,0,p->sz);
+  if(p->sz > CLINT){
+    copyUtoK(p,0,CLINT);
+  }else{
+    copyUtoK(p,0,p->sz);
+  }
+  
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
@@ -292,7 +297,6 @@ fork(void)
     release(&np->lock);
     return -1;
   }
-  copyUtoK(p,0,p->sz);
   np->sz = p->sz;
 
   np->parent = p;
@@ -314,6 +318,7 @@ fork(void)
   pid = np->pid;
 
   np->state = RUNNABLE;
+  copyUtoK(np,0,np->sz);
 
   release(&np->lock);
 
@@ -733,14 +738,15 @@ copyUtoK(struct proc* p,int sz, int n_sz){
   }
   if(sz < n_sz){
     for(i = sz;i < n_sz;i += PGSIZE){
+
+      
       if((pte = walk(u_pagetable, i, 0))==0)
         continue;
-      if((*pte & PTE_V) == 0)
+      if(((*pte) & PTE_V) == 0)
         continue;
-      
       if((k_pte = walk(k_pagetable, i, 1))==0)
         panic("copyUtoK");
-      *k_pte = (*pte & (~PTE_U));
+      *k_pte = ((*pte) & (~PTE_U));
     }
   }else{
     for(i=sz;i>n_sz;i -= PGSIZE){

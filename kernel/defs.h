@@ -29,6 +29,10 @@ void            consputc(int);
 // exec.c
 int             exec(char*, char**);
 
+//vmcopyin
+int             copyin_new(pagetable_t, char*, uint64, uint64);
+int             copyinstr_new(pagetable_t, char*, uint64, uint64);
+
 // file.c
 struct file*    filealloc(void);
 void            fileclose(struct file*);
