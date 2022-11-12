@@ -40,7 +40,9 @@ procinit(void)
       uint64 va = KSTACK((int) (p - proc));
       kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
       p->kstack = va;
+      p->kstack_pa = pa;
   }
+
   kvminithart();
 }
 
@@ -84,6 +86,7 @@ allocpid() {
 
   return pid;
 }
+int w=0;
 
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
@@ -120,12 +123,23 @@ found:
     release(&p->lock);
     return 0;
   }
+  // An kernel_page table
+  p->k_pagetable = ukvminit();
+  if(p->k_pagetable == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+  // p->kstack = KSTACK(0);
+  ukvmmap(p->k_pagetable,p->kstack, p->kstack_pa,PGSIZE, PTE_R | PTE_W);
+
+  
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
-  p->context.sp = p->kstack + PGSIZE;
+  p->context.sp = p->kstack+PGSIZE;
 
   return p;
 }
@@ -150,6 +164,7 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  releasewalk(p->k_pagetable);
 }
 
 // Create a user page table for a given process,
@@ -463,7 +478,6 @@ scheduler(void)
   for(;;){
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
-    
     int found = 0;
     for(p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
@@ -473,12 +487,13 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        ukvminithart(p->k_pagetable);
         swtch(&c->context, &p->context);
+        kvminithart();
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0; // cpu dosen't run any process now
-
         found = 1;
       }
       release(&p->lock);
