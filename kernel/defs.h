@@ -108,6 +108,7 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+void            copyUtoK(struct proc*,int,int);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -185,6 +186,8 @@ int             test_pagetable();
 void            vmprint(pagetable_t);
 void            releasewalk(pagetable_t);
 pagetable_t     get_global_pgtbl();
+pte_t*          walk(pagetable_t,uint64,int);
+pte_t*          walk2(pagetable_t,uint64,int);
 
 // plic.c
 void            plicinit(void);

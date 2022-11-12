@@ -88,8 +88,8 @@ ukvminit(){
     ukvmmap(uk_pagetable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
     // virtio mmio disk interface
     ukvmmap(uk_pagetable, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
-    // CLINT
-    ukvmmap(uk_pagetable,CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+    // // CLINT
+    // ukvmmap(uk_pagetable,CLINT, CLINT, 0x10000, PTE_R | PTE_W);
     // PLIC
     ukvmmap(uk_pagetable, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
     // map kernel text executable and read-only.
@@ -152,6 +152,27 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
     }
   }
   return &pagetable[PX(0, va)];
+}
+
+pte_t *
+walk2(pagetable_t pagetable, uint64 va, int alloc)
+{
+  pagetable_t temp;
+  if(va >= MAXVA)
+    panic("walk");
+
+  for(int level = 2; level > 1; level--) {
+    pte_t *pte = &pagetable[PX(level, va)];
+    if(*pte & PTE_V) {
+      pagetable = (pagetable_t)PTE2PA(*pte);
+    } else {
+      if(!alloc || (temp = (pde_t*)kalloc()) == 0)
+        return 0;
+      memset(temp, 0, PGSIZE);
+      *pte = PA2PTE(temp) | PTE_V;
+    }
+  }
+  return &temp[PX(1, va)];
 }
 
 // Look up a virtual address, return the physical address,

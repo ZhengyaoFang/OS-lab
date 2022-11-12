@@ -18,6 +18,7 @@ struct spinlock pid_lock;
 extern void forkret(void);
 static void wakeup1(struct proc *chan);
 static void freeproc(struct proc *p);
+void copyUtoK(struct proc* p,int sz,int n_sz);
 
 extern char trampoline[]; // trampoline.S
 
@@ -235,6 +236,7 @@ userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
+  copyUtoK(p,0,p->sz);
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
@@ -253,10 +255,11 @@ userinit(void)
 int
 growproc(int n)
 {
-  uint sz;
+  uint sz,o_sz;
   struct proc *p = myproc();
 
   sz = p->sz;
+  o_sz = sz;
   if(n > 0){
     if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
       return -1;
@@ -265,6 +268,7 @@ growproc(int n)
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
   p->sz = sz;
+  copyUtoK(p,o_sz,p->sz);
   return 0;
 }
 
@@ -288,6 +292,7 @@ fork(void)
     release(&np->lock);
     return -1;
   }
+  copyUtoK(p,0,p->sz);
   np->sz = p->sz;
 
   np->parent = p;
@@ -711,4 +716,41 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+void
+copyUtoK(struct proc* p,int sz, int n_sz){
+  pagetable_t u_pagetable = p->pagetable;
+  pagetable_t k_pagetable = p->k_pagetable;
+  pte_t *pte,*k_pte;
+  uint64 i;
+  int flags;
+  if(sz >= PLIC){
+    sz = PLIC;
+  }
+  if(n_sz >= PLIC){
+    n_sz = PLIC;
+  }
+  if(sz < n_sz){
+    for(i = sz;i < n_sz;i += PGSIZE){
+      if((pte = walk(u_pagetable, i, 0))==0)
+        continue;
+      if((*pte & PTE_V) == 0)
+        continue;
+      
+      if((k_pte = walk(k_pagetable, i, 1))==0)
+        panic("copyUtoK");
+      *k_pte = (*pte & (~PTE_U));
+    }
+  }else{
+    for(i=sz;i>n_sz;i -= PGSIZE){
+      if((k_pte = walk(k_pagetable, i, 0))==0)
+        continue;
+
+      *k_pte = 0;
+      
+    }
+  }
+  
+  
 }
