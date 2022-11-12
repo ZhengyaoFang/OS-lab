@@ -378,6 +378,7 @@ releasewalk(pagetable_t pagetable){
       pagetable[i] = 0;  
     }
   }
+  kfree((void*)pagetable);
 }
 
 // Free user memory pages,
